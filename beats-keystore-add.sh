@@ -9,23 +9,22 @@ Usage:
   $0 [OPTION]...
 
 Options:
-  -h, --help                Show this message
-  -b, --beat <beatname>     Chose beats who will append the pass in keystore (Default metricbeat)
-  -f, --env-file <filename> Source envs from shell file and store them in chosed beats (Default .beatpass)
-  -v, --verbose             Verbose mode
-  -d, --debug               Debug mode
+  -h, --help                 Show this message
+  -b, --beat <beatname>      Chose beats who will append the pass in keystore (Default metricbeat)
+  -f, --keys-file <filename> use the file as input to create keys in keystore (Default .beatkeys)
+  -q, --quiet, --silent      Silent mode
+  -d, --debug                Debug mode
 
 By Env:
-  You can pass parameters as env for script
+  For pass parameters as Env
   BEATS    - space separated list of beats
-  ENV_FILE - path of env file
+  KEYS_FILE - path of keys file
 
-
-Examples:-
+Examples:
   $0 --help
   $0 --debug -v -b metricbeat 
-  $0 --beat metricbeat --beat filebeat --env-file all_envs.sh
-  BEATS="journalbeat auditbeat" ENV_FILE="all_pass.sh" $0
+  $0 --beat metricbeat --beat filebeat --keys-file all_keys
+  BEATS="journalbeat auditbeat" KEYS_FILE="awesome_keys.kv" $0 -d
 
 Beats:
   metricbeat
@@ -35,8 +34,21 @@ Beats:
   auditbeat
   journalbeat
 
-EnvFile:
-  sh or bash format
+KeysFile:
+  file in format of key=value
+  Format:
+    key=value
+
+  Example:
+    # Cool Service
+    SERVICE_NAME=coolname
+    SERVICE_PASS=Str0ngP455
+
+    # Another
+    ANOTHER_CS=connection_string://0.0.0.0:88
+
+    # STRANGE
+    STRANGE_KEY=nice pass very long, with spaces and :=ç =ll.2\/d103d 1 0~;/ af ç
 
 EOF
 }
@@ -65,10 +77,10 @@ is_valid_beat(){
 }
 
 log() {
-  $verbose && echo $(date +%Y-%m-%dT%H-%M-%S): $@
+  $quiet || echo $(date +%Y-%m-%dT%H-%M-%S): $@
 }
 
-verbose=false
+quiet=false
 declare -a beats
 
 while [ $# -gt 0 ] ; do
@@ -82,11 +94,11 @@ while [ $# -gt 0 ] ; do
       is_valid_beat $2 || err "invalid beatname: "$2
       beats+=($2)
       ;;
-    "--env-file"|"-f")
-      env_file=$2
+    "--keys-file"|"-f")
+      keys_file=$2
       ;;
-    "--verbose"|"-v")
-      verbose=true
+    "--quiet"|"-q"|"--silent")
+      quiet=true
       nSkip=1
       ;;
     "--debug"|"-d")
@@ -100,11 +112,11 @@ while [ $# -gt 0 ] ; do
   shift $nSkip
 done
 
-default_env_file=.beatkeys
+default_keys_file=.beatkeys.json
 default_beats=${all_beats[@]}
-env_file=${env_file:-$default_env_file}
+keys_file=${keys_file:-$default_keys_file}
 
-ENV_FILE=${ENV_FILE:-$env_file}
+KEYS_FILE=${KEY_FILE:-$keys_file}
 ! [ -z "${BEATS:-}" ] && IFS=' ' read -r -a beats <<< "${BEATS:-}"
 [[ -z ${beats[@]+"${beats[@]}"} ]] && beats=${default_beats[@]}
 
@@ -115,7 +127,7 @@ done
 
 BEATS=${beats[@]}
 
-[ -f $ENV_FILE ] || err "invalid env-file: "$ENV_FILE
+[ -f $KEYS_FILE ] || err "missing keys-file: "$KEYS_FILE
 
 keystore_add(){
   key=$1
@@ -126,37 +138,28 @@ keystore_add(){
   sudopref="sudo -u $user"
   cmdpref="$sudopref $service keystore"
   $sudopref [ -f /var/lib/$service/$service.keystore ] || $cmdpref create
-  echo $value | $cmdpref add --stdin --force $key
+  echo "$value" | $cmdpref add --stdin --force $key
 }
 
-list_envs() {
-  env_file=$1
-  (
-    VARS="`set -o posix ; set`"
-    . $env_file
-    grep -vFe "$VARS" <<<"$(set -o posix ; set)" | grep -v '^VARS=\|^SHLVL='
-    unset VARS
-  )
+list_keys() {
+  keys_file=$1
+  grep -Ev '^(#|$| )' $keys_file | grep -E '^[[:alnum:]]*=*'
 }
 
-add_env(){
-  k=$1
-  v=$2
-  beat=$3
-  keystore_add $k $v $beat
-}
-
-add_envs() {
-  env_file=$1
+add_keys() {
+  keys_file=$1
   beats=$2
-  envs=$(list_envs $env_file)
-  . $env_file
+  keys=$(list_keys $keys_file)
+  ok=false
   for beat in ${beats[@]}; do
-    for kv in $envs; do
-      IFS="=" read -r k v <<< $kv
-      keystore_add $k $v $beat
+    for kv in $keys; do
+      k=$(cut -f1 -d= <<< $kv)
+      v=$(cut -f2- -d= <<< $kv)
+      keystore_add "$k" "$v" "$beat"
+      ok=true
     done
   done
+  $ok || err "missing envs"
 }
 
-add_envs $ENV_FILE $BEATS
+add_keys $KEYS_FILE $BEATS
