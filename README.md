@@ -1,6 +1,6 @@
 # Beats Keystore Add
 
-Add in beats keystores a set of keys sourced from shell env-file.
+Add in beats keystores a set of keys setted from key file
 
 ## Usage
 
@@ -52,21 +52,19 @@ KeysFile:
     STRANGE_KEY=nice pass very long, with spaces and :=ç =ll.2\/d103d 1 0~;/ af "'ç
 ```
 
-## Example EnvFile
-example of env-file used in beats
+## Example Key File
+example of key-file used in beats
 
-```sh
-#!/bin/sh
-
+```
 # .beatkeys
 
 ## elasticsearch
 ES_USER=esuser
-ES_PASS=STRONGESPASS
+ES_PASS=STRONGPASS
 
 ## kibana
 KIBANA_USER=kibanauser
-KIBANA_PASS=STRONGKIBANAPASS
+KIBANA_PASS=STRONG'KIBANA"PASS!@~;çHERE
 ```
 
 then you can use it in call of module
