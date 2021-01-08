@@ -10,23 +10,22 @@ Usage:
   ./beats-keystore-add.sh [OPTION]...
 
 Options:
-  -h, --help                Show this message
-  -b, --beat <beatname>     Chose beats who will append the pass in keystore (Default metricbeat)
-  -f, --env-file <filename> Source envs from shell file and store them in chosed beats (Default .beatpass)
-  -v, --verbose             Verbose mode
-  -d, --debug               Debug mode
+  -h, --help                 Show this message
+  -b, --beat <beatname>      Chose beats who will append the pass in keystore (Default metricbeat)
+  -f, --keys-file <filename> use the file as input to create keys in keystore (Default .beatkeys)
+  -q, --quiet, --silent      Silent mode
+  -d, --debug                Debug mode
 
 By Env:
-  You can pass parameters as env for script
+  For pass parameters as Env
   BEATS    - space separated list of beats
-  ENV_FILE - path of env file
+  KEYS_FILE - path of keys file
 
-
-Examples:-
+Examples:
   ./beats-keystore-add.sh --help
   ./beats-keystore-add.sh --debug -v -b metricbeat
-  ./beats-keystore-add.sh --beat metricbeat --beat filebeat --env-file all_envs.sh
-  BEATS="journalbeat auditbeat" ENV_FILE="all_pass.sh" ./beats-keystore-add.sh
+  ./beats-keystore-add.sh --beat metricbeat --beat filebeat --keys-file all_keys
+  BEATS="journalbeat auditbeat" KEYS_FILE="awesome_keys.kv" ./beats-keystore-add.sh -d
 
 Beats:
   metricbeat
@@ -36,8 +35,21 @@ Beats:
   auditbeat
   journalbeat
 
-EnvFile:
-  sh or bash format
+KeysFile:
+  file in format of key=value
+  Format:
+    key=value
+
+  Example:
+    # Cool Service
+    SERVICE_NAME=coolname
+    SERVICE_PASS=Str0ngP455
+
+    # Another
+    ANOTHER_CS=connection_string://0.0.0.0:88
+
+    # STRANGE
+    STRANGE_KEY=nice pass very long, with spaces and :=ç =ll.2\/d103d 1 0~;/ af "'ç
 ```
 
 ## Example EnvFile

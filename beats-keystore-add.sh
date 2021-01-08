@@ -48,7 +48,7 @@ KeysFile:
     ANOTHER_CS=connection_string://0.0.0.0:88
 
     # STRANGE
-    STRANGE_KEY=nice pass very long, with spaces and :=ç =ll.2\/d103d 1 0~;/ af ç
+    STRANGE_KEY=nice pass very long, with spaces and :=ç =ll.2\/d103d 1 0~;/ af "'ç
 
 EOF
 }
